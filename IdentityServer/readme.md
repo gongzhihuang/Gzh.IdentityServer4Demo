@@ -320,3 +320,251 @@ class Program
 启动ResourcesApi
 启动ResourceOwnerPasswordClient
 用postman测试
+
+## Implicit (OpenID Connect简化模式)
+
+	这个模式通过 OpenID Connect 协议向我们的 IdentityServer 添加了对用户认证交互的支持，
+	OpenID Connect的协议已经内置在IdentityServer中，
+	这个模式要提供UI用于认证交互
+
+1.给IdentityServer添加UI，用于登录，注销，同意授权和显示错误
+
+	这边的UI先用官方的demo，https://github.com/IdentityServer/IdentityServer4.Quickstart.UI/ ，
+	把Quickstart,Views,wwwroot文件放到IdentityServer项目目录下,
+	修改Startup.cs
+
+	```
+	public class Startup
+    {
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddIdentityServer()
+                .AddDeveloperSigningCredential()
+                .AddInMemoryApiResources(Config.GetApiResources())
+                .AddInMemoryClients(Config.GetClients())
+                .AddInMemoryIdentityResources(Config.GetIdentityResources())
+                //.AddTestUsers(Config.GetUsers());
+				.AddTestUsers(TestUsers.Users); //测试用户在Quickstart文件夹下
+
+            services.AddMvc();
+        }
+        
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+            app.UseStaticFiles();
+
+            app.UseIdentityServer();
+
+            app.UseMvcWithDefaultRoute();
+        }
+    }
+
+	```
+
+2.新建一个MVC客户端，MvcClient,这是MVC应用程序,会自动添加HomeController.cs的相应代码
+
+修改host为：http://localhost:5002
+
+修改Startup.cs
+
+```
+public class Startup
+{
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
+    public IConfiguration Configuration { get; }
+    
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.Configure<CookiePolicyOptions>(options =>
+        {
+            options.CheckConsentNeeded = context => true;
+            options.MinimumSameSitePolicy = SameSiteMode.None;
+        });
+
+        // 关闭JWT Claim类型映射，以允许常用的Claim（例如'sub'和'idp'）通过
+        JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+        //添加身份认证服务
+        services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "MvcClientCookies"; //用Cookie在本地登陆
+                options.DefaultChallengeScheme = "oidc"; //使用OpenID Connect协议
+            })
+            .AddCookie("MvcClientCookies")
+            .AddOpenIdConnect("oidc", options =>
+            {
+                options.Authority = "http://localhost:5000"; //信任的IdentityServer地址
+                options.RequireHttpsMetadata = false;
+
+                options.ClientId = "mvc";
+                options.SaveTokens = true; //在Cookie中保留IdentityServer颁发的令牌
+            });
+
+
+        services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+    }
+
+    public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+        else
+        {
+            app.UseExceptionHandler("/Home/Error");
+            app.UseHsts();
+        }
+
+        app.UseAuthentication();
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+        app.UseCookiePolicy();
+
+        app.UseMvc(routes =>
+        {
+            routes.MapRoute(
+                name: "default",
+                template: "{controller=Home}/{action=Index}/{id?}");
+        });
+    }
+}
+
+```
+
+3.修改HomeController.cs
+
+```
+public class HomeController : Controller
+{
+    public IActionResult Index()
+    {
+        return View();
+    }
+
+    [Authorize] //给这个Action添加了授权控制
+    public IActionResult Privacy()
+    {
+        return View();
+    }
+
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+}
+
+```
+
+4.修改Privacy.cshtml
+
+```
+@using Microsoft.AspNetCore.Authentication
+
+<p>Use this page to detail your site's privacy policy.</p>
+
+<h2>Claims</h2>
+
+<dl>
+    @foreach (var claim in User.Claims)
+    {
+        <dt>@claim.Type</dt>
+        <dd>@claim.Value</dd>
+    }
+</dl>
+
+<h2>Properties</h2>
+
+<dl>
+    @foreach (var prop in (await Context.AuthenticateAsync()).Properties.Items)
+    {
+        <dt>@prop.Key</dt>
+        <dd>@prop.Value</dd>
+    }
+</dl>
+
+```
+
+5.在IdentityServer中的Config.cs中，添加MvcClient这个客户端的配置，修改IdentityResource，增加Scope
+
+```
+public static IEnumerable<IdentityResource> GetIdentityResources()
+{
+    return new IdentityResource[]
+    {
+        new IdentityResources.OpenId(),
+        new IdentityResources.Profile(),
+    };
+}
+
+```
+
+
+```
+new Client
+{
+    ClientId = "mvc",
+    ClientName = "MVC Client",
+    AllowedGrantTypes = GrantTypes.Implicit,
+
+    // 登录成功回调处理地址，处理回调返回的数据
+    RedirectUris = { "http://localhost:5002/signin-oidc" },
+
+    // where to redirect to after logout
+    PostLogoutRedirectUris = { "http://localhost:5002/signout-callback-oidc" },
+
+    AllowedScopes = new List<string>
+    {
+        IdentityServerConstants.StandardScopes.OpenId,
+        IdentityServerConstants.StandardScopes.Profile
+    }
+}
+
+```
+
+可以使用客户端配置上RequireConsent的属性关闭同意授权页面
+
+6.添加注销
+使用IdentityServer等身份认证服务，仅清除本地应用程序cookie是不够的。
+此外，您还需要向IdentityServer进行往返交互以清除中央单点登录会话。
+
+在HomeController中添加一个注销的控制器
+
+```
+public IActionResult Logout()
+{
+    return SignOut("MvcClientCookies", "oidc");
+}
+
+```
+
+在Index.cshtml中增加一个注销链接
+```
+<a asp-controller="Home" asp-action="Logout">logout</a>
+
+```
+
+7.测试
+
+此处该有截图
+
+启动IdentityServer
+启动MvcClient
+用postman测试 http://localhost:5000/connect/token
+
+
+## Hybrid 混合模式
+
+关于混合流程和简化流程的区别，主要是令牌传输方式不同，简化流程中ID Token和Access Token都是通过浏览器传输，
+而混合模式中，ID Token通过浏览器传输，ID Token验证成功后再获取Access Token。这是因为访问令牌（AccessToken）比身份令牌（IdentityToken）更敏感。
