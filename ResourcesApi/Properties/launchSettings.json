@@ -1,9 +1,10 @@
 ﻿{
   "profiles": {
-    "IdentityServer": {
+    "ResourcesApi": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:5000",
+      "launchUrl": "api/values",
+      "applicationUrl": "http://localhost:5001",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
