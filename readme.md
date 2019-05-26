@@ -758,5 +758,261 @@ public class Startup
 启动ResourceApi
 启动JavascriptClient
 
+## 增加EF数据持久化
+
+到目前为止，所有的数据都在内存中存储
+
+有两种类型的数据需要持久化到数据库中，首先是配置数据（资源和客户端），第二个是IdentityServer在使用时产生的操作数据（令牌，代码和用户的授权信息consents）。 
+IdentityServer4.EntityFramework组件提供了数据持久化到数据库中的接口。
+
+官方demo提供了一个SqlServer的例子，这边改成mysql的例子
+
+1.新建一个IdentityServerEF的项目，内容与IdentityServer一样
+
+2.IdentityServerEF添加 IdentityServer4.EntityFramework Nuget包
+
+3.添加 Pomelo.EntityFrameworkCore.MySql Nuget包
+
+4.新建一个Models文件夹，增加ApplicationRole，ApplicationUser，User类
+
+```
+public class ApplicationRole : IdentityRole
+{
+}
+
+```
+
+```
+public class ApplicationUser : IdentityUser
+{
+}
+
+```
+
+```
+public class User
+{
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Column("name")]
+    public string Name { get; set; }
+
+    [Column("password")]
+    public string Password { get; set; }
+
+    [Column("age")]
+    public int Age { get; set; }
+}
+
+```
+
+5.添加ApplicationDbContext
+
+```
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+        // Customize the ASP.NET Identity model and override the defaults if needed.
+        // For example, you can rename the ASP.NET Identity table names and more.
+        // Add your customizations after calling base.OnModelCreating(builder);
+    }
+}
+
+```
+
+6.在Quickstart下添加ResourceOwnerPasswordValidator
+
+```
+public class ResourceOwnerPasswordValidator : IResourceOwnerPasswordValidator
+{
+    private UserDbContext _userDbContext;
+    public ResourceOwnerPasswordValidator(UserDbContext userContext)
+    {
+        _userDbContext = userContext;
+    }
+
+    public async Task ValidateAsync(ResourceOwnerPasswordValidationContext context)
+    {
+        //var user = await _myUserManager.FindByNameAsync(context.UserName);
+        var user = _userDbContext.Users.Where(x => x.Name == context.UserName && x.Password == context.Password).FirstOrDefault();
+        if (user != null)
+        {
+            context.Result = new GrantValidationResult(
+                subject: user.Name,
+                authenticationMethod: "custom",
+                claims: null);
+        }
+        else
+        {
+            context.Result = new GrantValidationResult(
+                   TokenRequestErrors.InvalidGrant,
+                   "invalid custom credential");
+        }
+        return;
+
+    }
+}
+
+```
+
+7.修改Startup.cs
+
+```
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        string userConnectionString = @"Server =localhost ; port = 3306; database =TestUser ; uid = root; pwd = 123456;Charset=utf8;sslmode=none";
+        services.AddDbContext<UserDbContext>(options => options.UseMySql(userConnectionString));
+
+        const string connectionString = @"Server =localhost ; port = 3306; database =identityserver ; uid = root; pwd = 123456;Charset=utf8;sslmode=none";
+        var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseMySql(connectionString));
+
+        services.AddIdentity<ApplicationUser, ApplicationRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+        //配置Authtication中间件 ,基于数据库配置
+        services.AddIdentityServer()
+            .AddDeveloperSigningCredential()
+            .AddConfigurationStore(options =>
+            {
+                options.ConfigureDbContext = builder =>
+                   builder.UseMySql(connectionString,
+                   sql => sql.MigrationsAssembly(migrationsAssembly));
+            })
+            .AddOperationalStore(options =>
+            {
+                options.ConfigureDbContext = builder =>
+                    builder.UseMySql(connectionString,
+                    sql => sql.MigrationsAssembly(migrationsAssembly));
+
+                // this enables automatic token cleanup. this is optional.
+                options.EnableTokenCleanup = true;
+                options.TokenCleanupInterval = 30;
+            })
+            .AddResourceOwnerValidator<ResourceOwnerPasswordValidator>();
+
+        services.AddMvc();
+    }
+
+    public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseStaticFiles();
+
+        app.UseIdentityServer();
+
+        app.UseMvcWithDefaultRoute();
+    }
+}
+
+```
+
+8.迁移
+
+```
+dotnet ef migrations add InitialIdentityServerPersistedGrantDbMigration -c PersistedGrantDbContext -o Data/Migrations/IdentityServer/PersistedGrantDb
+
+dotnet ef migrations add InitialIdentityServerConfigurationDbMigration -c ConfigurationDbContext -o Data/Migrations/IdentityServer/ConfigurationDb
+
+```
+
+9.创建一个InitializeDatabase方法，把Config.cs的配置数据保存到数据库
+
+```
+/// <summary>
+/// 初始化数据库
+/// </summary>
+/// <param name="app"></param>
+private void InitializeDatabase(IApplicationBuilder app)
+{
+    using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+    {
+        serviceScope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.Migrate();
+
+        var context = serviceScope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
+        context.Database.Migrate();
+        if (!context.Clients.Any())
+        {
+            foreach (var client in Config.GetClients())
+            {
+                context.Clients.Add(client.ToEntity());
+            }
+            context.SaveChanges();
+        }
+
+        if (!context.IdentityResources.Any())
+        {
+            foreach (var resource in Config.GetIdentityResources())
+            {
+                context.IdentityResources.Add(resource.ToEntity());
+            }
+            context.SaveChanges();
+        }
+
+        if (!context.ApiResources.Any())
+        {
+            foreach (var resource in Config.GetResource())
+            {
+                context.ApiResources.Add(resource.ToEntity());
+            }
+            context.SaveChanges();
+        }
+    }
+}
+
+```
+10.在Startup.cs的Configure方法中调用InitializeDatabase方法,只需要一次就行，运行完后可以注释掉InitializeDatabase方法的调用
+
+```
+public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+{
+    if (env.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+
+    InitializeDatabase(app);
+
+    app.UseStaticFiles();
+
+    app.UseIdentityServer();
+
+    app.UseMvcWithDefaultRoute();
+}
+
+```
+
+11.测试
+
+启动IdentityServerEF
+启动ResourceApi
+启动MvcClientHybrid
+
+
+## 后续还有一些功能可以增加和完善
+
+
+
+
+
+
+
 
 
