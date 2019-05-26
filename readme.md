@@ -1,4 +1,7 @@
-﻿# IdentityServer
+﻿# IdentityServer4
+
+参考：http://docs.identityserver.io/en/latest/
+https://www.cnblogs.com/stulzq/p/8119928.html
 
 ## ClientCredentials 客户端授权模式
 
@@ -51,7 +54,7 @@ public class Config
 
 4.配置IdentityServer
 	在Startup.cs文件中
-	```
+```
 	public class Startup
     {
         public void ConfigureServices(IServiceCollection services)
@@ -74,14 +77,14 @@ public class Config
         }
     }
 
-	```
+```
 
 5.在浏览器中访问 http://localhost:5000/.well-known/openid-configuration
 	至此，ClientCredentials授权模式的identityserver已经配置好
 
 6.新建一个ResourceApi项目,host为：http://localhost:5001 ,这是受保护的api资源
 
-修改 ValuesController
+修改 ValuesController.cs
 ```
 	[Route("api/[controller]")]
     [ApiController]
@@ -100,7 +103,7 @@ public class Config
 
 7.给ResourceApi这个项目添加验证中间件和配置DI
 
-	作用就是验证令牌
+作用就是验证令牌
 
 修改Startup.cs
 ```
@@ -225,7 +228,7 @@ public static List<TestUser> GetUsers()
 2.将用户添加到IdentityServer
 	修改IdentityServer项目的Startup.cs的ConfigureServices
 	
-	```
+```
 	public void ConfigureServices(IServiceCollection services)
     {
         services.AddIdentityServer()
@@ -236,7 +239,7 @@ public static List<TestUser> GetUsers()
             .AddTestUsers(Config.GetUsers()); //添加测试用户
     }
 
-	```
+```
 
 3.添加一个在Config.cs中添加一个Client
 ```
@@ -323,17 +326,17 @@ class Program
 
 ## Implicit (OpenID Connect简化模式)
 
-	这个模式通过 OpenID Connect 协议向我们的 IdentityServer 添加了对用户认证交互的支持，
-	OpenID Connect的协议已经内置在IdentityServer中，
-	这个模式要提供UI用于认证交互
+这个模式通过 OpenID Connect 协议向我们的 IdentityServer 添加了对用户认证交互的支持，
+OpenID Connect的协议已经内置在IdentityServer中，
+这个模式要提供UI用于认证交互
 
 1.给IdentityServer添加UI，用于登录，注销，同意授权和显示错误
 
-	这边的UI先用官方的demo，https://github.com/IdentityServer/IdentityServer4.Quickstart.UI/ ，
-	把Quickstart,Views,wwwroot文件放到IdentityServer项目目录下,
-	修改Startup.cs
+这边的UI先用官方的demo，https://github.com/IdentityServer/IdentityServer4.Quickstart.UI/ ，
+把Quickstart,Views,wwwroot文件放到IdentityServer项目目录下,
+修改Startup.cs
 
-	```
+```
 	public class Startup
     {
         public void ConfigureServices(IServiceCollection services)
@@ -364,7 +367,7 @@ class Program
         }
     }
 
-	```
+```
 
 2.新建一个MVC客户端，MvcClient,这是MVC应用程序,会自动添加HomeController.cs的相应代码
 
@@ -758,7 +761,7 @@ public class Startup
 启动ResourceApi
 启动JavascriptClient
 
-## 增加EF数据持久化
+## 增加EF数据持久化  mysql
 
 到目前为止，所有的数据都在内存中存储
 
@@ -999,7 +1002,14 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env)
 
 ```
 
-11.测试
+11.修改自定义用户身份验证逻辑，在Quickstart下修改AccountController
+
+具体参考代码，暂时只修改了登陆部分的代码
+
+
+
+
+12.测试
 
 启动IdentityServerEF
 启动ResourceApi
