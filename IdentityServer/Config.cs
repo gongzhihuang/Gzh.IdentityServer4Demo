@@ -70,6 +70,49 @@ namespace IdentityServer
                         IdentityServerConstants.StandardScopes.OpenId,
                         IdentityServerConstants.StandardScopes.Profile
                     }
+                },
+                new Client
+                {
+                    ClientId = "mvc2",
+                    ClientName = "MVC Client,Hybrid",
+                    AllowedGrantTypes = GrantTypes.Hybrid,
+
+                    ClientSecrets =
+                    {
+                        new Secret("secret".Sha256())
+                    },
+                    // 登录成功回调处理地址，处理回调返回的数据
+                    RedirectUris = { "http://localhost:5003/signin-oidc" },
+
+                    // where to redirect to after logout
+                    PostLogoutRedirectUris = { "http://localhost:5003/signout-callback-oidc" },
+
+                    AllowedScopes = 
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "api1"
+                    },
+                    AllowOfflineAccess = true //允许刷新令牌
+                },
+                new Client
+                {
+                    ClientId = "js",
+                    ClientName = "JavaScript Client",
+                    AllowedGrantTypes = GrantTypes.Code,
+                    RequirePkce = true,
+                    RequireClientSecret = false,
+
+                    RedirectUris =           { "http://localhost:5004/callback.html" },
+                    PostLogoutRedirectUris = { "http://localhost:5004/index.html" },
+                    AllowedCorsOrigins =     { "http://localhost:5004" },
+
+                    AllowedScopes =
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "api1"
+                    }
                 }
             };
         }

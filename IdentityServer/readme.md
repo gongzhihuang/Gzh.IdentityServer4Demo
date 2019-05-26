@@ -568,3 +568,195 @@ public IActionResult Logout()
 
 关于混合流程和简化流程的区别，主要是令牌传输方式不同，简化流程中ID Token和Access Token都是通过浏览器传输，
 而混合模式中，ID Token通过浏览器传输，ID Token验证成功后再获取Access Token。这是因为访问令牌（AccessToken）比身份令牌（IdentityToken）更敏感。
+
+1.接上面implicit模式，修改IdentityServer的Config.cs，添加一个client
+
+```
+new Client
+{
+    ClientId = "mvc2",
+    ClientName = "MVC Client,Hybrid",
+    AllowedGrantTypes = GrantTypes.Hybrid,
+
+    ClientSecrets =
+    {
+        new Secret("secret".Sha256())
+    },
+    // 登录成功回调处理地址，处理回调返回的数据
+    RedirectUris = { "http://localhost:5003/signin-oidc" },
+
+    // where to redirect to after logout
+    PostLogoutRedirectUris = { "http://localhost:5003/signout-callback-oidc" },
+
+    AllowedScopes = 
+    {
+        IdentityServerConstants.StandardScopes.OpenId,
+        IdentityServerConstants.StandardScopes.Profile,
+        "api1"
+    },
+    AllowOfflineAccess = true //允许刷新令牌
+}
+
+```
+2.新建MvcClientHybrid项目，内容与MvcClient内容类似，具体代码查看项目
+host改为：http://localhost:5003
+
+3.修改MvcClientHybrid项目的Startup.cs
+
+主要修改内容为：
+
+```
+services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "MvcClientHybridCookies"; //用Cookie在本地登陆
+    options.DefaultChallengeScheme = "oidc"; //使用OpenID Connect协议
+})
+    .AddCookie("MvcClientHybridCookies")
+    .AddOpenIdConnect("oidc", options =>
+    {
+        options.SignInScheme = "MvcClientHybridCookies";
+        options.Authority = "http://localhost:5000"; //信任的IdentityServer地址
+        options.RequireHttpsMetadata = false;
+
+        options.ClientId = "mvc2";
+        options.ClientSecret = "secret";
+        options.ResponseType = "code id_token"; //表示使用混合流程，通过浏览器返回身份令牌
+
+        options.SaveTokens = true; //在Cookie中保留IdentityServer颁发的令牌
+        options.GetClaimsFromUserInfoEndpoint = true;
+
+        options.Scope.Add("api1");
+        options.Scope.Add("offline_access");
+        options.ClaimActions.MapJsonKey("website", "website");
+    });
+
+```
+
+4.修改HomeController.cs
+
+```
+public async Task<IActionResult> CallApi()
+{
+    var accessToken = await HttpContext.GetTokenAsync("access_token");
+
+    var client = new HttpClient();
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+    var content = await client.GetStringAsync("http://localhost:5001/api/Values");
+
+    ViewBag.Json = JArray.Parse(content).ToString();
+    return View("json");
+}
+
+```
+5.在Views/Home下面新建一个json.cshtml
+
+```
+<pre>@ViewBag.Json</pre>
+<a asp-controller="Home" asp-action="Index">index</a>
+
+```
+6.在Index.cshtml和Privacy.cshtml中都加一个链接
+
+```
+<a asp-controller="Home" asp-action="CallApi">访问api</a>
+
+```
+
+7.测试
+
+此处该有截图
+
+启动IdentityServer
+启动ResourceApi
+启动MvcClientHybrid
+
+可以看到，没有登陆的时候点击 访问api 会返回401错误，登陆后可以正常访问，注销后访问会401错误
+
+## 授权码模式
+
+1.新建Javascript客户端，具体看JavaScriptClient项目
+
+host：http://localhost:5004
+
+Javascript客户端主要使用基于 JavaScript 的OIDC组件来处理OpenID Connect协议，
+在wwwroot目录下的 oidc-client.js 就是一种基于JavaScript的OIDC组件，https://github.com/IdentityModel/oidc-client-js
+
+
+2.配置IdentityServer项目的Config.cs,添加一个Client的配置
+
+```
+new Client
+{
+    ClientId = "js",
+    ClientName = "JavaScript Client",
+    AllowedGrantTypes = GrantTypes.Code,
+    RequirePkce = true,
+    RequireClientSecret = false,
+
+    RedirectUris =           { "http://localhost:5004/callback.html" },
+    PostLogoutRedirectUris = { "http://localhost:5004/index.html" },
+    AllowedCorsOrigins =     { "http://localhost:5004" },
+
+    AllowedScopes =
+    {
+        IdentityServerConstants.StandardScopes.OpenId,
+        IdentityServerConstants.StandardScopes.Profile,
+        "api1"
+    }
+}
+
+```
+3.在ResourceApi中配置CORS,以便JavaScript客户端跨域调用ResourceApi
+
+在ResourceApi的Startup.cs中
+
+```
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddMvcCore()
+            .AddAuthorization()
+            .AddJsonFormatters();
+
+        services.AddAuthentication("Bearer")
+            .AddJwtBearer("Bearer", options =>
+            {
+                options.Authority = "http://localhost:5000";
+                options.RequireHttpsMetadata = false;
+
+                options.Audience = "api1";
+            });
+
+        services.AddCors(options =>
+        {
+            // this defines a CORS policy called "default"
+            options.AddPolicy("default", policy =>
+            {
+                policy.WithOrigins("*")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
+    }
+
+    public void Configure(IApplicationBuilder app)
+    {
+        app.UseCors("default");
+        app.UseAuthentication();
+        app.UseMvc();
+    }
+}
+
+```
+
+4.测试
+
+此处该有截图
+
+启动IdentityServer
+启动ResourceApi
+启动JavascriptClient
+
+
+
