@@ -1,4 +1,5 @@
-﻿using IdentityServer4;
+﻿using IdentityModel;
+using IdentityServer4;
 using IdentityServer4.Models;
 using IdentityServer4.Test;
 using System;
@@ -23,7 +24,7 @@ namespace IdentityServerEF
         {
             return new List<ApiResource>
             {
-                new ApiResource("api1", "this is ResourcesApi")
+                new ApiResource("api1", "this is ResourcesApi",new List<string>(){JwtClaimTypes.Role})
             };
         }
 
@@ -51,7 +52,11 @@ namespace IdentityServerEF
                         new Secret("secret".Sha256())
                     },
 
-                    AllowedScopes = { "api1" }
+                    AllowedScopes = {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "api1"
+                    }
                 },
                 new Client
                 {
@@ -132,6 +137,12 @@ namespace IdentityServerEF
                     SubjectId = "2",
                     Username = "thor",
                     Password = "456789"
+                },
+                new TestUser
+                {
+                    SubjectId = "3",
+                    Username = "jack",
+                    Password = "jack"
                 }
             };
         }

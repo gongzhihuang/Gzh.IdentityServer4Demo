@@ -23,9 +23,9 @@ namespace IdentityServerEF.Quickstart
     /// This sample controller implements a typical login/logout/provision workflow for local and external accounts.
     /// The login service encapsulates the interactions with the user data store. This data store is in-memory only and cannot be used for production!
     /// The interaction service provides a way for the UI to communicate with identityserver for validation and context retrieval
-    /// ´ËÊ¾Àı¿ØÖÆÆ÷Îª±¾µØºÍÍâ²¿ÕÊ»§ÊµÏÖµäĞÍµÄµÇÂ¼/×¢Ïú/ÉèÖÃ¹¤×÷Á÷¡£
-    /// µÇÂ¼·şÎñ·â×°ÁËÓëÓÃ»§Êı¾İ´æ´¢µÄ½»»¥¡£´ËÊı¾İ´æ´¢½öÔÚÄÚ´æÖĞ£¬²»ÄÜÓÃÓÚÉú²ú£¡
-    /// ½»»¥·şÎñÎªUIÌá¹©ÁËÒ»ÖÖÓëIdentityServerÍ¨ĞÅµÄ·½Ê½£¬ÓÃÓÚÑéÖ¤ºÍÉÏÏÂÎÄ¼ìË÷¡£
+    /// æ­¤ç¤ºä¾‹æ§åˆ¶å™¨ä¸ºæœ¬åœ°å’Œå¤–éƒ¨å¸æˆ·å®ç°å…¸å‹çš„ç™»å½•/æ³¨é”€/è®¾ç½®å·¥ä½œæµã€‚
+    /// ç™»å½•æœåŠ¡å°è£…äº†ä¸ç”¨æˆ·æ•°æ®å­˜å‚¨çš„äº¤äº’ã€‚æ­¤æ•°æ®å­˜å‚¨ä»…åœ¨å†…å­˜ä¸­ï¼Œä¸èƒ½ç”¨äºç”Ÿäº§ï¼
+    /// äº¤äº’æœåŠ¡ä¸ºUIæä¾›äº†ä¸€ç§ä¸IdentityServeré€šä¿¡çš„æ–¹å¼ï¼Œç”¨äºéªŒè¯å’Œä¸Šä¸‹æ–‡æ£€ç´¢ã€‚
     /// </summary>
     [SecurityHeaders]
     [AllowAnonymous]
@@ -36,22 +36,22 @@ namespace IdentityServerEF.Quickstart
         private UserDbContext _userDbContext;
 
         /// <summary>
-        /// ½»»¥·şÎñ,Ìá¹©ÓÃÓÚÓÃ»§½çÃæÓÃÓÚÓëÉí·İ·şÎñÆ÷Í¨ĞÅµÄ·şÎñ
+        /// äº¤äº’æœåŠ¡,æä¾›ç”¨äºç”¨æˆ·ç•Œé¢ç”¨äºä¸èº«ä»½æœåŠ¡å™¨é€šä¿¡çš„æœåŠ¡
         /// </summary>
         private readonly IIdentityServerInteractionService _interaction;
 
         /// <summary>
-        /// ¿Í»§¶ËÅäÖÃ¼ìË÷
+        /// å®¢æˆ·ç«¯é…ç½®æ£€ç´¢
         /// </summary>
         private readonly IClientStore _clientStore;
 
         /// <summary>
-        /// ¸ºÔğ¹ÜÀíÖ§³ÖÄÄĞ©Éí·İÑéÖ¤·½°¸
+        /// è´Ÿè´£ç®¡ç†æ”¯æŒå“ªäº›èº«ä»½éªŒè¯æ–¹æ¡ˆ
         /// </summary>
         private readonly IAuthenticationSchemeProvider _schemeProvider;
 
         /// <summary>
-        /// ÊÂ¼ş·şÎñ½çÃæ
+        /// äº‹ä»¶æœåŠ¡ç•Œé¢
         /// </summary>
         private readonly IEventService _events;
 
@@ -76,19 +76,19 @@ namespace IdentityServerEF.Quickstart
 
         /// <summary>
         /// Entry point into the login workflow
-        /// µÇÂ¼Á÷³ÌÈë¿Úµã
+        /// ç™»å½•æµç¨‹å…¥å£ç‚¹
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Login(string returnUrl)
         {
             // build a model so we know what to show on the login page
-            //½¨Á¢Ò»¸öÄ£ĞÍÒÔ±ãÎÒÃÇÖªµÀÔÚµÇÂ¼Ò³ÃæÉÏÏÔÊ¾Ê²Ã´
+            //å»ºç«‹ä¸€ä¸ªæ¨¡å‹ä»¥ä¾¿æˆ‘ä»¬çŸ¥é“åœ¨ç™»å½•é¡µé¢ä¸Šæ˜¾ç¤ºä»€ä¹ˆ
             var vm = await BuildLoginViewModelAsync(returnUrl);
 
             if (vm.IsExternalLoginOnly)
             {
                 // we only have one option for logging in and it's an external provider
-                //ÎÒÃÇÖ»ÓĞÒ»¸öµÇÂ¼Ñ¡Ïî£¬ËüÊÇÒ»¸öÍâ²¿Ìá¹©Õß
+                //æˆ‘ä»¬åªæœ‰ä¸€ä¸ªç™»å½•é€‰é¡¹ï¼Œå®ƒæ˜¯ä¸€ä¸ªå¤–éƒ¨æä¾›è€…
                 return RedirectToAction("Challenge", "External", new { provider = vm.ExternalLoginScheme, returnUrl });
             }
 
@@ -97,18 +97,18 @@ namespace IdentityServerEF.Quickstart
 
         /// <summary>
         /// Handle postback from username/password login
-        /// ´¦ÀíÓÃ»§Ãû/ÃÜÂëµÇÂ¼µÄ»Ø·¢
+        /// å¤„ç†ç”¨æˆ·å/å¯†ç ç™»å½•çš„å›å‘
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginInputModel model, string button)
         {
             // check if we are in the context of an authorization request
-            //¼ì²éÎÒÃÇÊÇ·ñÔÚÊÚÈ¨ÇëÇóµÄÉÏÏÂÎÄÖĞ
+            //æ£€æŸ¥æˆ‘ä»¬æ˜¯å¦åœ¨æˆæƒè¯·æ±‚çš„ä¸Šä¸‹æ–‡ä¸­
             var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
 
             // the user clicked the "cancel" button
-            // ÓÃ»§µã»÷ÁËÈ¡Ïû°´Å¥
+            // ç”¨æˆ·ç‚¹å‡»äº†å–æ¶ˆæŒ‰é’®
             if (button != "login")
             {
                 if (context != null)
@@ -116,17 +116,17 @@ namespace IdentityServerEF.Quickstart
                     // if the user cancels, send a result back into IdentityServer as if they 
                     // denied the consent (even if this client does not require consent).
                     // this will send back an access denied OIDC error response to the client.
-                    //Èç¹ûÓÃ»§È¡Ïû£¬Ôò½«½á¹û·¢ËÍ»ØIdentityServer£¬ÈçÍ¬ËûÃÇ¾Ü¾øÍ¬ÒâÒ»Ñù£¨¼´Ê¹´Ë¿Í»§¶Ë²»ĞèÒªÍ¬Òâ£©¡£
-                    //Õâ½«Ïò¿Í»§¶Ë·¢ËÍ¾Ü¾ø·ÃÎÊµÄOIDC´íÎóÏìÓ¦¡£
+                    //å¦‚æœç”¨æˆ·å–æ¶ˆï¼Œåˆ™å°†ç»“æœå‘é€å›IdentityServerï¼Œå¦‚åŒä»–ä»¬æ‹’ç»åŒæ„ä¸€æ ·ï¼ˆå³ä½¿æ­¤å®¢æˆ·ç«¯ä¸éœ€è¦åŒæ„ï¼‰ã€‚
+                    //è¿™å°†å‘å®¢æˆ·ç«¯å‘é€æ‹’ç»è®¿é—®çš„OIDCé”™è¯¯å“åº”ã€‚
                     await _interaction.GrantConsentAsync(context, ConsentResponse.Denied);
 
                     // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
-                    //ÎÒÃÇ¿ÉÒÔĞÅÈÎModel.ReturnURL£¬ÒòÎªGetAuthorizationContextAsync·µ»Ø·Ç¿ÕÖµ
+                    //æˆ‘ä»¬å¯ä»¥ä¿¡ä»»Model.ReturnURLï¼Œå› ä¸ºGetAuthorizationContextAsyncè¿”å›éç©ºå€¼
                     if (await _clientStore.IsPkceClientAsync(context.ClientId))
                     {
                         // if the client is PKCE then we assume it's native, so this change in how to
                         // return the response is for better UX for the end user.
-                        //Èç¹û¿Í»§»úÊÇpkce£¬ÄÇÃ´ÎÒÃÇ¼ÙÉèËüÊÇ±¾»úµÄ£¬ËùÒÔÈçºÎ·µ»ØÏìÓ¦µÄÕâÖÖ¸ü¸ÄÊÇÎªÁË¸üºÃµØÎª×îÖÕÓÃ»§Ìá¹©UX¡£
+                        //å¦‚æœå®¢æˆ·æœºæ˜¯pkceï¼Œé‚£ä¹ˆæˆ‘ä»¬å‡è®¾å®ƒæ˜¯æœ¬æœºçš„ï¼Œæ‰€ä»¥å¦‚ä½•è¿”å›å“åº”çš„è¿™ç§æ›´æ”¹æ˜¯ä¸ºäº†æ›´å¥½åœ°ä¸ºæœ€ç»ˆç”¨æˆ·æä¾›UXã€‚
                         return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
                     }
 
@@ -135,7 +135,7 @@ namespace IdentityServerEF.Quickstart
                 else
                 {
                     // since we don't have a valid context, then we just go back to the home page
-                    //ÒòÎªÎÒÃÇÃ»ÓĞÓĞĞ§µÄÉÏÏÂÎÄ£¬ËùÒÔÎÒÃÇÖ»Ğè·µ»ØÖ÷Ò³
+                    //å› ä¸ºæˆ‘ä»¬æ²¡æœ‰æœ‰æ•ˆçš„ä¸Šä¸‹æ–‡ï¼Œæ‰€ä»¥æˆ‘ä»¬åªéœ€è¿”å›ä¸»é¡µ
                     return Redirect("~/");
                 }
             }
@@ -199,28 +199,28 @@ namespace IdentityServerEF.Quickstart
                 {
                     //var user = _users.FindByUsername(model.Username);
 
-                    // RaiseAsync Òı·¢Ö¸¶¨µÄÊÂ¼ş¡£
-                    // Òı·¢ÓÃ»§µÇÂ¼³É¹¦µÄÊÂ¼ş
+                    // RaiseAsync å¼•å‘æŒ‡å®šçš„äº‹ä»¶ã€‚
+                    // å¼•å‘ç”¨æˆ·ç™»å½•æˆåŠŸçš„äº‹ä»¶
                     await _events.RaiseAsync(new UserLoginSuccessEvent(user.Name, user.Id.ToString(), user.Name));
 
                     // only set explicit expiration here if user chooses "remember me". 
                     // otherwise we rely upon expiration configured in cookie middleware.
-                    //½öµ±ÓÃ»§Ñ¡Ôñ¡°¼Ç×¡ÎÒ¡±Ê±²ÅÔÚ´Ë´¦ÉèÖÃÏÔÊ½¹ıÆÚ¡£
-                    //·ñÔò£¬ÎÒÃÇÒÀÀµÓÚÔÚcookieÖĞ¼ä¼şÖĞÅäÖÃµÄ¹ıÆÚ¡£
-                    AuthenticationProperties props = null; // ÓÃÓÚ´æ´¢ÓĞ¹ØÉí·İÑéÖ¤»á»°µÄ×´Ì¬ÖµµÄ×Öµä
-                    //¼Ç×¡µÇÂ¼
+                    //ä»…å½“ç”¨æˆ·é€‰æ‹©â€œè®°ä½æˆ‘â€æ—¶æ‰åœ¨æ­¤å¤„è®¾ç½®æ˜¾å¼è¿‡æœŸã€‚
+                    //å¦åˆ™ï¼Œæˆ‘ä»¬ä¾èµ–äºåœ¨cookieä¸­é—´ä»¶ä¸­é…ç½®çš„è¿‡æœŸã€‚
+                    AuthenticationProperties props = null; // ç”¨äºå­˜å‚¨æœ‰å…³èº«ä»½éªŒè¯ä¼šè¯çš„çŠ¶æ€å€¼çš„å­—å…¸
+                    //è®°ä½ç™»å½•
                     if (AccountOptions.AllowRememberLogin && model.RememberLogin)
                     {
                         props = new AuthenticationProperties
                         {
-                            IsPersistent = true,//»ñÈ¡»òÉèÖÃÊÇ·ñ¿ç¶à¸öÇëÇó³Ö¾Ã»¯Éí·İÑéÖ¤»á»°
-                            //»ñÈ¡»òÉèÖÃÉí·İÑéÖ¤Æ±Ö¤¹ıÆÚµÄÊ±¼ä¡£ Ä¬ÈÏ30Ìì£¿
+                            IsPersistent = true,//è·å–æˆ–è®¾ç½®æ˜¯å¦è·¨å¤šä¸ªè¯·æ±‚æŒä¹…åŒ–èº«ä»½éªŒè¯ä¼šè¯
+                            //è·å–æˆ–è®¾ç½®èº«ä»½éªŒè¯ç¥¨è¯è¿‡æœŸçš„æ—¶é—´ã€‚ é»˜è®¤30å¤©ï¼Ÿ
                             ExpiresUtc = DateTimeOffset.UtcNow.Add(AccountOptions.RememberMeLoginDuration)
                         };
                     };
 
                     // issue authentication cookie with subject ID and username
-                    //°ä·¢¾ßÓĞÊ¹ÓÃÕßIDºÍÓÃ»§ÃûµÄÉí·İÑéÖ¤cookie
+                    //é¢å‘å…·æœ‰ä½¿ç”¨è€…IDå’Œç”¨æˆ·åçš„èº«ä»½éªŒè¯cookie
                     await HttpContext.SignInAsync(user.Id.ToString(), user.Name, props);
 
                     if (context != null)
@@ -248,18 +248,18 @@ namespace IdentityServerEF.Quickstart
                     else
                     {
                         // user might have clicked on a malicious link - should be logged
-                        //ÓÃ»§¿ÉÄÜµ¥»÷ÁË¶ñÒâÁ´½Ó-Ó¦¼ÇÂ¼
+                        //ç”¨æˆ·å¯èƒ½å•å‡»äº†æ¶æ„é“¾æ¥-åº”è®°å½•
                         throw new Exception("invalid return URL");
                     }
                 }
 
-                //Òı·¢µÇÂ¼Ê§°ÜµÄÊÂ¼ş
+                //å¼•å‘ç™»å½•å¤±è´¥çš„äº‹ä»¶
                 await _events.RaiseAsync(new UserLoginFailureEvent(model.Username, "invalid credentials"));
                 ModelState.AddModelError(string.Empty, AccountOptions.InvalidCredentialsErrorMessage);
             }
 
             // something went wrong, show form with error
-            //³ö´í£¬±íµ¥ÏÔÊ¾´íÎóÄÚÈİ
+            //å‡ºé”™ï¼Œè¡¨å•æ˜¾ç¤ºé”™è¯¯å†…å®¹
             var vm = await BuildLoginViewModelAsync(model);
             return View(vm);
         }
@@ -267,20 +267,20 @@ namespace IdentityServerEF.Quickstart
 
         /// <summary>
         /// Show logout page
-        /// ÏÔÊ¾×¢ÏúÒ³Ãæ
+        /// æ˜¾ç¤ºæ³¨é”€é¡µé¢
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Logout(string logoutId)
         {
             // build a model so the logout page knows what to display
-            //¹¹½¨Ò»¸öÄ£ĞÍ£¬ÒÔ±ã×¢ÏúÒ³ÃæÖªµÀÒªÏÔÊ¾Ê²Ã´
+            //æ„å»ºä¸€ä¸ªæ¨¡å‹ï¼Œä»¥ä¾¿æ³¨é”€é¡µé¢çŸ¥é“è¦æ˜¾ç¤ºä»€ä¹ˆ
             var vm = await BuildLogoutViewModelAsync(logoutId);
 
             if (vm.ShowLogoutPrompt == false)
             {
                 // if the request for logout was properly authenticated from IdentityServer, then
                 // we don't need to show the prompt and can just log the user out directly.
-                //Èç¹û´ÓIdentityServerÕıÈ·ÑéÖ¤ÁË×¢ÏúÇëÇó£¬ÔòÎÒÃÇ²»ĞèÒªÏÔÊ¾ÌáÊ¾£¬Ö»ĞèÖ±½Ó×¢ÏúÓÃ»§¼´¿É¡£
+                //å¦‚æœä»IdentityServeræ­£ç¡®éªŒè¯äº†æ³¨é”€è¯·æ±‚ï¼Œåˆ™æˆ‘ä»¬ä¸éœ€è¦æ˜¾ç¤ºæç¤ºï¼Œåªéœ€ç›´æ¥æ³¨é”€ç”¨æˆ·å³å¯ã€‚
                 return await Logout(vm);
             }
 
@@ -289,39 +289,39 @@ namespace IdentityServerEF.Quickstart
 
         /// <summary>
         /// Handle logout page postback
-        /// ´¦Àí×¢ÏúÒ³»Ø·¢
+        /// å¤„ç†æ³¨é”€é¡µå›å‘
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(LogoutInputModel model)
         {
             // build a model so the logged out page knows what to display
-            //¹¹½¨Ò»¸öÄ£ĞÍ£¬ÒÔ±ã×¢ÏúÒ³ÃæÖªµÀÒªÏÔÊ¾Ê²Ã´
+            //æ„å»ºä¸€ä¸ªæ¨¡å‹ï¼Œä»¥ä¾¿æ³¨é”€é¡µé¢çŸ¥é“è¦æ˜¾ç¤ºä»€ä¹ˆ
             var vm = await BuildLoggedOutViewModelAsync(model.LogoutId);
 
             if (User?.Identity.IsAuthenticated == true)
             {
                 // delete local authentication cookie
-                //É¾³ı±¾µØÉí·İÑéÖ¤cookie
+                //åˆ é™¤æœ¬åœ°èº«ä»½éªŒè¯cookie
                 await HttpContext.SignOutAsync();
 
                 // raise the logout event
-                // Òı·¢×¢Ïú³É¹¦ÊÂ¼ş
+                // å¼•å‘æ³¨é”€æˆåŠŸäº‹ä»¶
                 await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
             }
 
             // check if we need to trigger sign-out at an upstream identity provider
-            //¼ì²éÊÇ·ñĞèÒª´¥·¢ÉÏÓÎÉí·İÌá¹©³ÌĞòµÄ×¢Ïú
+            //æ£€æŸ¥æ˜¯å¦éœ€è¦è§¦å‘ä¸Šæ¸¸èº«ä»½æä¾›ç¨‹åºçš„æ³¨é”€
             if (vm.TriggerExternalSignout)
             {
                 // build a return URL so the upstream provider will redirect back
                 // to us after the user has logged out. this allows us to then
                 // complete our single sign-out processing.
-                //¹¹½¨Ò»¸ö·µ»ØURL£¬ÒÔ±ãÉÏÓÎÌá¹©³ÌĞòÔÚÓÃ»§×¢Ïúºó½«ÖØ¶¨Ïò»ØÎÒÃÇ¡£ÕâÑùÎÒÃÇ¾Í¿ÉÒÔÍê³ÉÎÒÃÇµÄµ¥´Î×¢Ïú´¦Àí
+                //æ„å»ºä¸€ä¸ªè¿”å›URLï¼Œä»¥ä¾¿ä¸Šæ¸¸æä¾›ç¨‹åºåœ¨ç”¨æˆ·æ³¨é”€åå°†é‡å®šå‘å›æˆ‘ä»¬ã€‚è¿™æ ·æˆ‘ä»¬å°±å¯ä»¥å®Œæˆæˆ‘ä»¬çš„å•æ¬¡æ³¨é”€å¤„ç†
                 string url = Url.Action("Logout", new { logoutId = vm.LogoutId });
 
                 // this triggers a redirect to the external provider for sign-out
-                //Õâ½«´¥·¢ÖØ¶¨Ïòµ½Íâ²¿Ìá¹©³ÌĞòÒÔ½øĞĞ×¢Ïú
+                //è¿™å°†è§¦å‘é‡å®šå‘åˆ°å¤–éƒ¨æä¾›ç¨‹åºä»¥è¿›è¡Œæ³¨é”€
                 return SignOut(new AuthenticationProperties { RedirectUri = url }, vm.ExternalAuthenticationScheme);
             }
 
@@ -335,7 +335,7 @@ namespace IdentityServerEF.Quickstart
         /*****************************************/
 
         /// <summary>
-        /// ¹¹½¨µÇÂ¼Ä£ĞÍ
+        /// æ„å»ºç™»å½•æ¨¡å‹
         /// </summary>
         /// <param name="returnUrl"></param>
         /// <returns></returns>
@@ -347,7 +347,7 @@ namespace IdentityServerEF.Quickstart
                 var local = context.IdP == IdentityServer4.IdentityServerConstants.LocalIdentityProvider;
 
                 // this is meant to short circuit the UI and only trigger the one external IdP
-                //ÕâÊÇÎªÁËÊ¹UI¶ÌÂ·£¬²¢ÇÒÖ»´¥·¢Ò»¸öÍâ²¿IDP
+                //è¿™æ˜¯ä¸ºäº†ä½¿UIçŸ­è·¯ï¼Œå¹¶ä¸”åªè§¦å‘ä¸€ä¸ªå¤–éƒ¨IDP
                 var vm = new LoginViewModel
                 {
                     EnableLocalLogin = local,
@@ -378,7 +378,7 @@ namespace IdentityServerEF.Quickstart
             var allowLocal = true;
             if (context?.ClientId != null)
             {
-                //°´±êÊ¶·û²éÕÒÆôÓÃµÄ¿Í»§¶Ë
+                //æŒ‰æ ‡è¯†ç¬¦æŸ¥æ‰¾å¯ç”¨çš„å®¢æˆ·ç«¯
                 var client = await _clientStore.FindEnabledClientByIdAsync(context.ClientId);
                 if (client != null)
                 {
@@ -402,7 +402,7 @@ namespace IdentityServerEF.Quickstart
         }
 
         /// <summary>
-        /// ¹¹½¨µÇÂ¼Ä£ĞÍ
+        /// æ„å»ºç™»å½•æ¨¡å‹
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -415,7 +415,7 @@ namespace IdentityServerEF.Quickstart
         }
 
         /// <summary>
-        /// ¹¹½¨×¢ÏúÄ£ĞÍ
+        /// æ„å»ºæ³¨é”€æ¨¡å‹
         /// </summary>
         /// <param name="logoutId"></param>
         /// <returns></returns>
@@ -426,7 +426,7 @@ namespace IdentityServerEF.Quickstart
             if (User?.Identity.IsAuthenticated != true)
             {
                 // if the user is not authenticated, then just show logged out page
-                //Èç¹ûÓÃ»§Î´Í¨¹ıÉí·İÑéÖ¤£¬ÔòÖ»ÏÔÊ¾×¢ÏúÒ³Ãæ
+                //å¦‚æœç”¨æˆ·æœªé€šè¿‡èº«ä»½éªŒè¯ï¼Œåˆ™åªæ˜¾ç¤ºæ³¨é”€é¡µé¢
                 vm.ShowLogoutPrompt = false;
                 return vm;
             }
@@ -435,21 +435,21 @@ namespace IdentityServerEF.Quickstart
             if (context?.ShowSignoutPrompt == false)
             {
                 // it's safe to automatically sign-out
-                //×Ô¶¯×¢ÏúÊÇ°²È«µÄ
+                //è‡ªåŠ¨æ³¨é”€æ˜¯å®‰å…¨çš„
                 vm.ShowLogoutPrompt = false;
                 return vm;
             }
 
             // show the logout prompt. this prevents attacks where the user
             // is automatically signed out by another malicious web page.
-            //ÏÔÊ¾×¢ÏúÌáÊ¾¡£Õâ¿ÉÒÔ·ÀÖ¹ÓÃ»§±»ÁíÒ»¸ö¶ñÒâÍøÒ³×Ô¶¯×¢ÏúµÄ¹¥»÷¡£
+            //æ˜¾ç¤ºæ³¨é”€æç¤ºã€‚è¿™å¯ä»¥é˜²æ­¢ç”¨æˆ·è¢«å¦ä¸€ä¸ªæ¶æ„ç½‘é¡µè‡ªåŠ¨æ³¨é”€çš„æ”»å‡»ã€‚
             return vm;
         }
 
         private async Task<LoggedOutViewModel> BuildLoggedOutViewModelAsync(string logoutId)
         {
             // get context information (client name, post logout redirect URI and iframe for federated signout)
-            //»ñÈ¡ÉÏÏÂÎÄĞÅÏ¢£¨¿Í»§¶ËÃû³Æ¡¢×¢ÏúºóÖØ¶¨ÏòURIºÍÁªºÏ×¢ÏúµÄiframe£©
+            //è·å–ä¸Šä¸‹æ–‡ä¿¡æ¯ï¼ˆå®¢æˆ·ç«¯åç§°ã€æ³¨é”€åé‡å®šå‘URIå’Œè”åˆæ³¨é”€çš„iframeï¼‰
             var logout = await _interaction.GetLogoutContextAsync(logoutId);
 
             var vm = new LoggedOutViewModel

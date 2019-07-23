@@ -27,41 +27,68 @@ namespace IdentityServerEF
 {
     public class Startup
     {
+
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            string userConnectionString = @"Server =localhost ; port = 3306; database =TestUser ; uid = root; pwd = 123456;Charset=utf8;sslmode=none";
+            string userConnectionString = Configuration.GetSection("userConnectionString").Value;
             services.AddDbContext<UserDbContext>(options => options.UseMySql(userConnectionString));
 
-            const string connectionString = @"Server =localhost ; port = 3306; database =identityserver ; uid = root; pwd = 123456;Charset=utf8;sslmode=none";
-            var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+            // string connectionString = Configuration.GetSection("identityDataConnectionString").Value;
+            // var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseMySql(connectionString));
+            // services.AddDbContext<ApplicationDbContext>(options =>
+            //     options.UseMySql(connectionString));
 
-            services.AddIdentity<ApplicationUser, ApplicationRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
+            // services.AddIdentity<ApplicationUser, ApplicationRole>()
+            //     .AddEntityFrameworkStores<ApplicationDbContext>()
+            //     .AddDefaultTokenProviders();
 
-            //配置Authtication中间件 ,基于数据库配置
+            // //配置Authtication中间件 ,基于数据库配置
+            // services.AddIdentityServer(options => options.Authentication.CookieAuthenticationScheme = "Cookies")
+            //     .AddDeveloperSigningCredential()
+            //     .AddConfigurationStore(options =>
+            //     {
+            //         options.ConfigureDbContext = builder =>
+            //            builder.UseMySql(connectionString,
+            //            sql => sql.MigrationsAssembly(migrationsAssembly));
+            //     })
+            //     .AddOperationalStore(options =>
+            //     {
+            //         options.ConfigureDbContext = builder =>
+            //             builder.UseMySql(connectionString,
+            //             sql => sql.MigrationsAssembly(migrationsAssembly));
+
+            //         // this enables automatic token cleanup. this is optional.
+            //         options.EnableTokenCleanup = true;
+            //         options.TokenCleanupInterval = 30;
+            //     })
+            //     .AddResourceOwnerValidator<ResourceOwnerPasswordValidator>();
+
             services.AddIdentityServer()
                 .AddDeveloperSigningCredential()
-                .AddConfigurationStore(options =>
-                {
-                    options.ConfigureDbContext = builder =>
-                       builder.UseMySql(connectionString,
-                       sql => sql.MigrationsAssembly(migrationsAssembly));
-                })
-                .AddOperationalStore(options =>
-                {
-                    options.ConfigureDbContext = builder =>
-                        builder.UseMySql(connectionString,
-                        sql => sql.MigrationsAssembly(migrationsAssembly));
+                .AddInMemoryApiResources(Config.GetApiResources())
+                .AddInMemoryClients(Config.GetClients())
+                .AddInMemoryIdentityResources(Config.GetIdentityResources())
+                // .AddTestUsers(Config.GetUsers());
+                .AddResourceOwnerValidator<ResourceOwnerPasswordValidator>()
+                .AddProfileService<ProfileService>();
 
-                    // this enables automatic token cleanup. this is optional.
-                    options.EnableTokenCleanup = true;
-                    options.TokenCleanupInterval = 30;
-                })
-                .AddResourceOwnerValidator<ResourceOwnerPasswordValidator>();
+            services.AddAuthentication("Bearer")
+                .AddCookie("Cookies")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    //identityserver4 地址 也就是本项目地址
+                    options.Authority = "http://localhost:5000";
+                    options.RequireHttpsMetadata = false;
+                    options.Audience = "api1";
+                });
 
             services.AddMvc();
         }
@@ -73,7 +100,7 @@ namespace IdentityServerEF
                 app.UseDeveloperExceptionPage();
             }
 
-            //InitializeDatabase(app);
+            // InitializeDatabase(app);
 
             app.UseStaticFiles();
 

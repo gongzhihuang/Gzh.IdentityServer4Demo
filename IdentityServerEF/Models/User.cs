@@ -19,5 +19,8 @@ namespace IdentityServerEF.Models
 
         [Column("age")]
         public int Age { get; set; }
+
+        [Column("roles")]
+        public string Role { get; set; }
     }
 }
